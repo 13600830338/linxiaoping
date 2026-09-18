@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>盛利II 提取方案互动演示（双方案版）</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+         background:#FBFAF7; color:#1a1a1a; margin:0; padding:18px 12px 30px; }
+  .wrap { max-width:880px; margin:0 auto; }
+  h2 { color:#0F2C52; font-size:20px; margin:0 0 2px; }
+  .sub { color:#666; font-size:12.5px; margin-bottom:14px; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .tab { flex:1; padding:11px 6px; border-radius:10px; border:1.5px solid #D9D2C2; background:#fff;
+         font-size:14px; font-weight:600; color:#666; cursor:pointer; text-align:center; }
+  .tab.active1 { background:#9E2B25; border-color:#9E2B25; color:#fff; }
+  .tab.active2 { background:#0F2C52; border-color:#0F2C52; color:#fff; }
+  .kpis { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .kpi { flex:1; min-width:118px; background:#fff; border:1px solid #E5E2D8; border-radius:10px; padding:10px 12px; }
+  .kpi .v { font-size:20px; font-weight:700; color:#9E2B25; }
+  .kpi .l { font-size:11px; color:#777; margin-top:2px; }
+  .kpi.blue .v { color:#0F2C52; }
+  .kpi.green .v { color:#2E7D6B; }
+  .stages { display:flex; align-items:stretch; gap:4px; margin:6px 0 4px; flex-wrap:wrap; }
+  .seg { border-radius:8px; padding:8px 4px; text-align:center; color:#fff; font-size:11px; line-height:1.35; }
+  .seg b { display:block; font-size:12px; }
+  .sliderRow { display:flex; align-items:center; gap:12px; margin:16px 0 6px; }
+  input[type=range] { flex:1; accent-color:#0F2C52; height:26px; }
+  .ageLabel { font-size:15px; font-weight:700; color:#0F2C52; min-width:64px; text-align:right; }
+  .panel { background:#fff; border:1px solid #E5E2D8; border-radius:12px; padding:14px 16px; margin-top:12px; }
+  .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #EEE; font-size:14px; gap:12px; }
+  .row:last-child { border-bottom:none; }
+  .row .val { font-weight:700; text-align:right; }
+  .note { font-size:10.5px; color:#999; margin-top:12px; line-height:1.6; }
+  .badge { display:inline-block; background:#0F2C52; color:#fff; font-size:11.5px; border-radius:20px; padding:3px 12px; margin-bottom:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h2>盛利II 储蓄保险–至尊 ｜ 提取方案互动演示</h2>
+  <div class="sub">被保人 0 岁男 ｜ 年缴 10 万美金 × 5 年（总投入 50 万）｜ 点击切换方案，拖动滑杆查看任意年龄</div>
+
+  <div class="tabs">
+    <div class="tab active1" id="tab1" onclick="switchPlan(1)">方案一 ｜ 终身现金流<br><span style="font-size:11px;font-weight:400">累计提取 850 万</span></div>
+    <div class="tab" id="tab2" onclick="switchPlan(2)">方案二 ｜ 延迟提取·财富传承<br><span style="font-size:11px;font-weight:400">累计提取 660 万＋传承 1.96 亿</span></div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="stages" id="stages"></div>
+
+  <div class="sliderRow">
+    <input type="range" id="age" min="0" max="100" value="30">
+    <div class="ageLabel" id="ageLabel">30岁</div>
+  </div>
+
+  <div class="panel">
+    <div class="badge" id="stageName">—</div>
+    <div class="row"><span>本年龄提取款项</span><span class="val" id="wd" style="color:#9E2B25;">—</span></div>
+    <div class="row"><span>累计已提取</span><span class="val" id="cum" style="color:#9E2B25;">—</span></div>
+    <div class="row"><span>提取后账户剩余价值（非保证）</span><span class="val" id="rem" style="color:#0F2C52;">—</span></div>
+  </div>
+
+  <div class="note">注：两套演示均为同一保单的不同提取情景，不可同时行使；剩余价值按安盛建议书数据点线性插值，仅供演示。金额基于现时假设投资回报率计算，红利为非保证，实际金额或高或低于所示数值。提取款项于相关保单年度终结时进行，年龄为被保人年龄。数据取自安盛建议书（保单货币：美金）。</div>
+</div>
+
+<script>
+// ============ 方案一：终身现金流（官方建议书） ============
+var P1 = {
+  wd: {}, rem: [[22,1041723],[30,1485089],[40,2287718],[50,3294362],[60,4159806],[70,5109644],[80,6217898],[100,21909668]],
+  start: [5,0,22,1041723],
+  kpis: [['50万','总投入（美金）',''],['850万','累计提取总额',''],['622万','80岁账户剩余（非保证）','green'],['2,191万','100岁账户剩余（非保证）','blue']],
+  segs: [
+    {t:'18-22岁',a:'10万/年',c:'#B8860B',w:2},
+    {t:'30岁',a:'50万',c:'#9E2B25',w:1.5},
+    {t:'40岁',a:'50万',c:'#9E2B25',w:1.5},
+    {t:'50岁',a:'100万',c:'#9E2B25',w:1.8},
+    {t:'51-60岁',a:'15万/年',c:'#2E7D6B',w:2.2},
+    {t:'61-70岁',a:'20万/年',c:'#2E7D6B',w:2.2},
+    {t:'71-80岁',a:'25万/年',c:'#2E7D6B',w:2.2},
+  ],
+  stage: function(a){
+    if (a<5) return ['缴费期 · 每年投入10万','#0F2C52'];
+    if (a<18) return ['增值期 · 锁定复利滚存','#8A8F98'];
+    if (a<=22) return ['教育金 · 每年领10万','#B8860B'];
+    if (a===30) return ['而立之年 · 一次性领50万','#9E2B25'];
+    if (a===40) return ['事业高峰 · 一次性领50万','#9E2B25'];
+    if (a===50) return ['半百储备 · 一次性领100万','#9E2B25'];
+    if (a<=60) return ['退休初期 · 每年领15万','#2E7D6B'];
+    if (a<=70) return ['退休中期 · 每年领20万','#2E7D6B'];
+    if (a<=80) return ['退休后期 · 每年领25万','#2E7D6B'];
+    return ['传承期 · 账户继续增值','#0F2C52'];
+  }
+};
+for (var a=18;a<=22;a++) P1.wd[a]=100000;
+P1.wd[30]=500000; P1.wd[40]=500000; P1.wd[50]=1000000;
+for (var a=51;a<=60;a++) P1.wd[a]=150000;
+for (var a=61;a<=70;a++) P1.wd[a]=200000;
+for (var a=71;a<=80;a++) P1.wd[a]=250000;
+
+// ============ 方案二：延迟提取·财富传承（官方建议书） ============
+var P2 = {
+  wd: {}, rem: [[30,2925600],[40,5491428],[50,10307016],[54,13258620],[60,18513778],[70,31786709],[84,71972100],[90,104311163],[100,195806392]],
+  start: [5,0,25,1947556],
+  kpis: [['50万','总投入（美金）',''],['660万','累计提取总额',''],['1.04亿','90岁账户剩余（非保证）','green'],['1.96亿','100岁账户剩余（非保证）','blue']],
+  segs: [
+    {t:'55-60岁',a:'12万/年',c:'#B8860B',w:2.2},
+    {t:'61-84岁',a:'22万/年',c:'#2E7D6B',w:3.2},
+    {t:'85-90岁',a:'10万/年',c:'#A9802D',w:2.2},
+  ],
+  stage: function(a){
+    if (a<5) return ['缴费期 · 每年投入10万','#0F2C52'];
+    if (a<55) return ['增值期 · 复利滚存不急领','#8A8F98'];
+    if (a<=60) return ['首阶段 · 每年领12万','#B8860B'];
+    if (a<=84) return ['主力阶段 · 每年领22万','#2E7D6B'];
+    if (a<=90) return ['长寿阶段 · 每年领10万','#A9802D'];
+    return ['传承期 · 账户继续增值','#0F2C52'];
+  }
+};
+for (var a=55;a<=60;a++) P2.wd[a]=120000;
+for (var a=61;a<=84;a++) P2.wd[a]=220000;
+for (var a=85;a<=90;a++) P2.wd[a]=100000;
+
+var plan = P1, planId = 1;
+function fmt(n){ return n.toLocaleString('en-US'); }
+function remAt(age){
+  if (age <= plan.start[0]) return 0;
+  if (age < plan.start[2]) {
+    var r = (age - plan.start[0]) / (plan.start[2] - plan.start[0]);
+    return Math.round(plan.start[3] * r * r);
+  }
+  var R = plan.rem;
+  if (age <= R[0][0]) return R[0][1];
+  for (var i=0;i<R.length-1;i++){
+    if (age>=R[i][0] && age<=R[i+1][0])
+      return Math.round(R[i][1]+(R[i+1][1]-R[i][1])*(age-R[i][0])/(R[i+1][0]-R[i][0]));
+  }
+  return R[R.length-1][1];
+}
+function switchPlan(id){
+  planId = id; plan = (id===1 ? P1 : P2);
+  document.getElementById('tab1').className = 'tab' + (id===1?' active1':'');
+  document.getElementById('tab2').className = 'tab' + (id===2?' active2':'');
+  var k = document.getElementById('kpis'); k.innerHTML='';
+  plan.kpis.forEach(function(x){
+    k.innerHTML += '<div class="kpi '+x[2]+'"><div class="v">'+x[0]+'</div><div class="l">'+x[1]+'</div></div>';
+  });
+  var s = document.getElementById('stages'); s.innerHTML='';
+  plan.segs.forEach(function(g){
+    s.innerHTML += '<div class="seg" style="background:'+g.c+';flex:'+g.w+'"><b>'+g.t+'</b>'+g.a+'</div>';
+  });
+  update();
+}
+function update(){
+  var a = +document.getElementById('age').value;
+  var c=0; for (var k in plan.wd) if (+k<=a) c+=plan.wd[k];
+  var wd = plan.wd[a]||0;
+  document.getElementById('ageLabel').textContent = a+'岁';
+  document.getElementById('wd').textContent = wd>0 ? '$'+fmt(wd) : '—（本年度不提取）';
+  document.getElementById('cum').textContent = '$'+fmt(c);
+  document.getElementById('rem').textContent = '$'+fmt(remAt(a));
+  var s = plan.stage(a), b = document.getElementById('stageName');
+  b.textContent = s[0]; b.style.background = s[1];
+}
+document.getElementById('age').addEventListener('input',update);
+switchPlan(1);
+</script>
+</body>
+</html>
